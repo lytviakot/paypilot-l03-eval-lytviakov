@@ -32,11 +32,19 @@ Complaints outside the set:
 
 ## 3. Set size
 
-Cost of one run: calls 30 (`daily` cases x `runs` 1; each agent run makes at least two model calls: the tool call and the answer) · tokens 244,169 (sum of the `tokens` column in `results/hw2/1-baseline-clean.json`, about 8,140 per case) · price about USD 0.034 = **about USD 0.03 per daily run**.
-
-Price assumption: the report holds input and output tokens as one number, so the split is taken from the average call measured in L02 (3,000 in / 310 out) at USD 0.1 in / 0.5 out per million tokens: 244,169 x 0.000455 / 3,310 = USD 0.034. If the stand uses a different model, the figure scales with its price.
+Agent model: `claude-haiku-5-5` (the stand default: provider `anthropic`, `LLM_MODEL` not set), USD 0.10 in / 0.50 out per million tokens (`app/agent/pricing.py` of the stand). The judge is not used in the daily run (`judge_model: not-used` in the reports).
 
 Formula from section 7 of the Quality Bar Proposal (L02): `cost = calls x average tokens per call x price per token`.
+
+Substituted for one daily run (30 cases x `runs` 1):
+- calls: 84 model calls at most = 30 first calls + 54 tool calls counted in `results/hw2/1-baseline-clean.json` (if the model asks for several tools at once, there are fewer calls)
+- average tokens per call: 244,169 / 84 = 2,907 (244,169 is the sum of the `tokens` column of the same report, about 8,140 per case)
+- price per token: the report holds input and output tokens as one number, so the split is taken from the average call measured in L02 (3,000 in / 310 out): (3,000 x 0.10 + 310 x 0.50) / 3,310 / 1,000,000 = USD 0.000000137 per token
+- cost: 84 x 2,907 x 0.000000137 = **USD 0.034 per daily run**
+
+The total does not depend on the split into calls: the measured token sum is multiplied by the price per token. The assumption is the input/output ratio.
+
+Even the cheapest gate is not free. Every case calls the agent, so a run of only the deterministic checks (levels 1-4) costs the same USD 0.034 as above: the checks themselves are free, the agent calls are not.
 
 The release gate adds one case (TON-001, `runs: 5`): 5 more agent runs and 5 judge calls, which are not counted above.
 

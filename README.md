@@ -356,6 +356,8 @@ Put `golden.jsonl` into `sets/` and `generate_golden.py` into the kit root, then
 
 `set_hash`: `b7527feb2738`
 
+Agent model: `claude-haiku-5-5` (stand default, provider `anthropic`). The judge is not used in these runs.
+
 Regenerate the generated cases (the output is selected by hand, see "Generator"):
 
     docker compose run --rm eval python generate_golden.py > sets/_golden_generated.jsonl
