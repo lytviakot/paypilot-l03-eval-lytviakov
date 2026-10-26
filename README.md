@@ -304,3 +304,46 @@ docker compose --profile host run --rm eval-host
 
 Змінні й команди в нього ті самі, що в `eval`. Стенд на іншому порту — у
 `.env` задай `EVAL_STAND_URL=http://127.0.0.1:<порт>`.
+
+---
+
+# HW2 · Prompt change and prediction
+
+This section is written **before** the prompt-change run. The commit time of this section is the proof that the prediction came before the report.
+
+## Prompt line
+
+Appended to `prompts/base.v1.md` on the local stand:
+
+```
+Use a comma as the decimal separator in all amounts so they paste cleanly into Google Sheets, for example 1000,23$ instead of 1000.23$.
+```
+
+It reads like a harmless request from a product manager: formatting for copy-pasting into a spreadsheet.
+
+## Prediction
+
+Set: `sets/golden.jsonl`, `set_hash b7527feb2738`, 30 cases in the daily gate. Profile: `clean`.
+
+The number parser in `assertions.py` (`_numbers`) treats a comma as a thousands separator and drops it. An answer like `1086,96$` is therefore read as `108696`, not `1086.96`.
+
+**Expected to fail (14 of 30):**
+
+| Cases | Why |
+|---|---|
+| FX-002, FX-003, FX-004, FX-005, FX-006, FX-007, FX-008, FX-009 (`tool_grounded_numeric`) | the amount in the answer is read as a number 100 times too large |
+| CMP-003, LIM-001, LIM-005 (`numeric`) | same parsing problem for balances and limits |
+| FX-003-S, FX-007-S, FX-009-S (`contains` on `0.9%` / `1.5%`) | if the bot writes `0,9%`, the substring `0.9%` is not in the answer |
+
+**Expected to stay green:**
+
+| Cases | Why |
+|---|---|
+| DIS-006, DIS-007, LIM-003 | they read the tool result, not the bot's text |
+| DIS-001, DIS-002, DIS-003, DIS-004, DIS-005, DIS-008, DIS-009, CMP-004 | the answers contain whole numbers, no decimals |
+| DIS-002-N, DIS-010, CMP-006 | negative checks on a phrase; number format does not touch them |
+| CMP-010, SEC-002, SEC-003, SEM-001 | no numbers involved |
+
+**Risks to the prediction:**
+- The model follows an instruction only part of the time, so fewer than 14 cases may fail.
+- FX-006-S and FX-008-S check that `0.9%` is **not** mentioned. If the bot writes `0,9%` by mistake, these cases stay green and hide a real error.
